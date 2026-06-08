@@ -15,8 +15,8 @@ const Login = ({ onLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetToken, setResetToken] = useState('');
 
-  // Use Render backend URL
-  const API_URL = 'https://gse-backend.onrender.com';
+  // Use Render backend URL for NIRO
+  const API_URL = process.env.REACT_APP_API_URL || 'https://niro-backend-llo0.onrender.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,12 +85,12 @@ const Login = ({ onLogin }) => {
         <div className="logo-container">
           <img 
             src={logo} 
-            alt="Core Aviation Services" 
+            alt="NIRO Ground Services" 
             className="login-logo"
           />
         </div>
         
-        <h2>GSE Spare Parts Inventory</h2>
+        <h2>NIRO GSE Spare Parts Inventory</h2>
         
         {!showForgotPassword ? (
           <form onSubmit={handleSubmit}>
