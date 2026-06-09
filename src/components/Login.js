@@ -16,7 +16,7 @@ const Login = ({ onLogin }) => {
   const [resetToken, setResetToken] = useState('');
 
   // Use Render backend URL for NIRO
-  const API_URL = process.env.REACT_APP_API_URL || 'https://niro-backend-llo0.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://niro-backend-695t.onrender.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,12 +81,18 @@ const Login = ({ onLogin }) => {
   return (
     <div className="login-container">
       <div className="login-box">
-        {/* Company Logo */}
+        {/* Company Logo - Medium Size (180px) */}
         <div className="logo-container">
           <img 
             src={logo} 
             alt="NIRO Ground Services" 
             className="login-logo"
+            style={{ 
+              width: '180px',      // ← Medium size logo
+              height: 'auto',      // ← Maintains aspect ratio
+              maxWidth: '100%',
+              marginBottom: '20px'
+            }}
           />
         </div>
         
