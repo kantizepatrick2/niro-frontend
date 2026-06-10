@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const Dashboard = ({ token, user }) => {
   const [lowStockParts, setLowStockParts] = useState([]);
@@ -10,8 +11,6 @@ const Dashboard = ({ token, user }) => {
     totalTransactions: 0,
     pendingApprovals: 0
   });
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchDashboardData();
