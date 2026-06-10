@@ -15,22 +15,15 @@ const Login = ({ onLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetToken, setResetToken] = useState('');
 
-  // Use Render backend URL for NIRO
-  const API_URL = process.env.REACT_APP_API_URL || 'https://niro-backend-695t.onrender.com';
-
-  // DEBUG: Log the API URL to console and alert for debugging
-  console.log('🔧 [DEBUG] API_URL being used:', API_URL);
-  console.log('🔧 [DEBUG] REACT_APP_API_URL env var:', process.env.REACT_APP_API_URL);
+  // HARDCODED backend URL for NIRO (temporary fix)
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('🔧 [DEBUG] Attempting login to:', `${API_URL}/api/login`);
     try {
       const response = await axios.post(`${API_URL}/api/login`, { username, password });
-      console.log('🔧 [DEBUG] Login successful:', response.data);
       onLogin(response.data.token, response.data.user);
     } catch (err) {
-      console.error('🔧 [DEBUG] Login error:', err.response?.data || err.message);
       setError('Invalid credentials');
     }
   };
@@ -95,8 +88,8 @@ const Login = ({ onLogin }) => {
             alt="NIRO Ground Services" 
             className="login-logo"
             style={{ 
-              width: '180px',      // ← Medium size logo
-              height: 'auto',      // ← Maintains aspect ratio
+              width: '180px',
+              height: 'auto',
               maxWidth: '100%',
               marginBottom: '20px'
             }}
