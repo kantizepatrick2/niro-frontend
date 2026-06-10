@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const Reports = ({ token }) => {
   const [lowStockParts, setLowStockParts] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     const fetchData = async () => {

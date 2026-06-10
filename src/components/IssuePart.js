@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const IssuePart = ({ token, user }) => {
   const [parts, setParts] = useState([]);
@@ -14,10 +15,8 @@ const IssuePart = ({ token, user }) => {
     technician_name: '',
     work_order: '',
     notes: '',
-    maintenance_type: 'preventive' // NEW: preventive or corrective
+    maintenance_type: 'preventive'
   });
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchParts();
@@ -51,7 +50,6 @@ const IssuePart = ({ token, user }) => {
     e.preventDefault();
     setLoading(true);
     
-    // Add maintenance type to notes if needed
     let finalNotes = formData.notes;
     if (formData.maintenance_type) {
       const maintTypeText = formData.maintenance_type === 'preventive' ? '🔧 Preventive Maintenance' : '🛠️ Corrective Maintenance';
@@ -103,7 +101,6 @@ const IssuePart = ({ token, user }) => {
     }
   };
 
-  // Helper to extract maintenance type from notes for display
   const getMaintenanceTypeFromNotes = (notes) => {
     if (notes && notes.includes('Preventive Maintenance')) {
       return '🔧 Preventive';
@@ -114,7 +111,6 @@ const IssuePart = ({ token, user }) => {
     return '';
   };
 
-  // Helper to clean notes (remove maintenance type prefix for display)
   const cleanNotes = (notes) => {
     if (notes) {
       return notes.replace('🔧 Preventive Maintenance - ', '').replace('🛠️ Corrective Maintenance - ', '');
@@ -179,7 +175,6 @@ const IssuePart = ({ token, user }) => {
               />
             </div>
             
-            {/* NEW: Maintenance Type Selection */}
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Maintenance Type *</label>
               <div style={{ display: 'flex', gap: '20px', marginTop: '5px' }}>
@@ -351,7 +346,7 @@ const IssuePart = ({ token, user }) => {
                     );
                   })}
                 </tbody>
-               </table>
+              </table>
             </div>
           )}
         </div>

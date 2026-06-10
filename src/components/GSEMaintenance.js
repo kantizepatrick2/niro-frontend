@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const GSEMaintenance = ({ token, user }) => {
   const [equipment, setEquipment] = useState([]);
@@ -60,8 +61,6 @@ const GSEMaintenance = ({ token, user }) => {
     last_service_hours: 0,
     last_service_year: null
   });
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchEquipment();

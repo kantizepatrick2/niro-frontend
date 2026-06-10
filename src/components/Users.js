@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const Users = ({ token, user }) => {
   const [users, setUsers] = useState([]);
@@ -18,8 +19,6 @@ const Users = ({ token, user }) => {
     role: 'storekeeper',
     email: ''
   });
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchUsers();
@@ -187,7 +186,7 @@ const Users = ({ token, user }) => {
               <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>Role</th>
               <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>Email</th>
               <th style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'left' }}>Actions</th>
-            </tr>
+             </tr>
           </thead>
           <tbody>
             {users.map(u => (

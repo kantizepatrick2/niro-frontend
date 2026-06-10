@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const ReceivePart = ({ token }) => {
   const [mode, setMode] = useState('receive');
@@ -17,7 +18,7 @@ const ReceivePart = ({ token }) => {
     compatible_gse: '',
     location_bin: '',
     min_stock: 5,
-    maintenance_type: 'hour', // NEW: hour, month, year, none
+    maintenance_type: 'hour',
     service_interval_hours: 250,
     service_interval_months: 6,
     service_interval_years: 1,
@@ -28,8 +29,6 @@ const ReceivePart = ({ token }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   const handleReceive = async (e) => {
     e.preventDefault();
@@ -69,7 +68,6 @@ const ReceivePart = ({ token }) => {
     setLoading(true);
     
     try {
-      // First create the part with maintenance type
       await axios.post(`${API_URL}/api/parts`, {
         part_number: newPartData.part_number,
         description: newPartData.description,
@@ -88,7 +86,6 @@ const ReceivePart = ({ token }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Then receive the quantity
       await axios.post(`${API_URL}/api/transactions/receive`, {
         part_number: newPartData.part_number,
         quantity: parseInt(formData.quantity),
@@ -143,7 +140,6 @@ const ReceivePart = ({ token }) => {
     }
   };
 
-  // Get maintenance type display text
   const getMaintenanceTypeDisplay = (type) => {
     switch(type) {
       case 'hour': return '⏱️ Hour-based (operating hours)';
@@ -405,7 +401,6 @@ const ReceivePart = ({ token }) => {
               </select>
             </div>
 
-            {/* Hour-based interval field */}
             {newPartData.maintenance_type === 'hour' && (
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (hours)</label>
@@ -426,7 +421,6 @@ const ReceivePart = ({ token }) => {
               </div>
             )}
 
-            {/* Month-based interval field */}
             {newPartData.maintenance_type === 'month' && (
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (months)</label>
@@ -447,7 +441,6 @@ const ReceivePart = ({ token }) => {
               </div>
             )}
 
-            {/* Year-based interval field */}
             {newPartData.maintenance_type === 'year' && (
               <div style={{ marginBottom: '15px' }}>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (years)</label>

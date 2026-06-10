@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import API_URL from '../config/api';
 
 const PartsList = ({ token, user }) => {
   const [parts, setParts] = useState([]);
@@ -22,8 +23,6 @@ const PartsList = ({ token, user }) => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-
-  const API_URL = 'https://gse-backend.onrender.com';
 
   const fetchParts = useCallback(async () => {
     try {
