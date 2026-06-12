@@ -61,7 +61,8 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
     last_service_year: null
   });
 
-  const API_URL = 'https://gse-backend.onrender.com';
+  // ========== FIXED: Use NIRO backend URL ==========
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   useEffect(() => {
     fetchEquipment();
@@ -308,7 +309,6 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
       } else if (editData.maintenance_type === 'month') {
         payload.service_interval_months = parseInt(editData.service_interval_months);
         payload.last_service_date = editData.last_service_date;
-        // Update next_service_date based on new interval
         if (editData.last_service_date && editData.service_interval_months) {
           const nextDate = new Date(editData.last_service_date);
           nextDate.setMonth(nextDate.getMonth() + parseInt(editData.service_interval_months));
@@ -318,7 +318,6 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
         payload.service_interval_years = parseInt(editData.service_interval_years);
         payload.last_service_year = editData.last_service_year;
         payload.last_service_full_date = editData.last_service_full_date;
-        // Update next_service_date based on new interval
         if (editData.last_service_full_date && editData.service_interval_years) {
           const nextDate = new Date(editData.last_service_full_date);
           nextDate.setFullYear(nextDate.getFullYear() + parseInt(editData.service_interval_years));
@@ -574,7 +573,7 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
               <th style={{ border: '1px solid #ddd', padding: '12px' }}>⏰ Remaining</th>
               <th style={{ border: '1px solid #ddd', padding: '12px' }}>Status</th>
               <th style={{ border: '1px solid #ddd', padding: '12px' }}>Actions</th>
-            </tr>
+            </table>
           </thead>
           <tbody>
             {filteredEquipment.map(eq => {
@@ -667,7 +666,7 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
         </div>
       )}
 
-      {/* Edit Modal - FIXED to update maintenance table */}
+      {/* Edit Modal */}
       {editMode && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '8px', width: '600px', maxWidth: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
