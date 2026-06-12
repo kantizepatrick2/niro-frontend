@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
 import API_URL from '../config/api';
 
 const PartsList = ({ token, user }) => {
@@ -25,15 +24,24 @@ const PartsList = ({ token, user }) => {
   const [error, setError] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [importing, setImporting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const fetchParts = useCallback(async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/parts`, {
-        headers: { Authorization: `Bearer ${token}` }
+      console.log('🔧 Fetching parts from:', `${API_URL}/api/parts`);
+      const response = await axios.get(`${API_URL}/api/parts?_=${Date.now()}`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
+      console.log('🔧 Parts loaded:', response.data.length);
       setParts(response.data);
     } catch (err) {
-      console.error('Error fetching parts:', err);
+      console.error('🔧 Error fetching parts:', err);
+      console.error('🔧 Error response:', err.response?.data);
+      setError('Failed to load parts');
     }
   }, [token]);
 
@@ -60,7 +68,7 @@ const PartsList = ({ token, user }) => {
         contact_phone: '',
         contact_email: ''
       });
-      fetchParts();
+      await fetchParts();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setError('Error adding part');
@@ -83,7 +91,7 @@ const PartsList = ({ token, user }) => {
       setMessage(`✓ Part "${editingPart.part_number}" updated successfully!`);
       setShowEditForm(false);
       setEditingPart(null);
-      fetchParts();
+      await fetchParts();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
       setError('Error updating part');
@@ -93,90 +101,101 @@ const PartsList = ({ token, user }) => {
 
   const handleDeletePart = async (part) => {
     try {
-      await axios.delete(`${API_URL}/api/parts/${part.id}`, {
+      console.log('🗑️ Deleting part:', part);
+      const response = await axios.delete(`${API_URL}/api/parts/${part.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('Delete response:', response.data);
       setMessage(`✓ Part "${part.part_number}" deleted successfully!`);
       setShowDeleteConfirm(null);
-      fetchParts();
+      setParts([]);
+      await fetchParts();
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      setError('Error deleting part');
+      console.error('Delete error details:', err.response?.data);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Error deleting part';
+      setError(errorMsg);
       setTimeout(() => setError(''), 3000);
     }
   };
 
-  // Excel Import Function
+  const handleManualRefresh = async () => {
+    setRefreshing(true);
+    await fetchParts();
+    setRefreshing(false);
+    setMessage('✓ List refreshed!');
+    setTimeout(() => setMessage(''), 2000);
+  };
+
   const handleExcelImport = (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
     setImporting(true);
-    const reader = new FileReader();
     
-    reader.onload = async (e) => {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, { type: 'array' });
-      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+    import('xlsx').then((XLSX) => {
+      const reader = new FileReader();
       
-      let successCount = 0;
-      let failCount = 0;
-      
-      for (const row of jsonData) {
-        // Map Excel columns to database fields
-        // Supports multiple column name variations
-        const partData = {
-          part_number: row['Part Number'] || row['PartNumber'] || row['part_number'] || row['PART_NUMBER'],
-          description: row['Description'] || row['description'] || row['DESCRIPTION'] || '',
-          manufacturer: row['Manufacturer'] || row['manufacturer'] || row['MANUFACTURER'] || '',
-          compatible_gse: row['Compatible GSE'] || row['compatible_gse'] || row['COMPATIBLE_GSE'] || '',
-          location_bin: row['Location Bin'] || row['location_bin'] || row['LOCATION_BIN'] || '',
-          min_stock: parseInt(row['Min Stock'] || row['min_stock'] || row['MIN_STOCK'] || 5),
-          quantity_on_hand: parseInt(row['Quantity On Hand'] || row['quantity_on_hand'] || row['QUANTITY_ON_HAND'] || 0),
-          contact_person: row['Contact Person'] || row['contact_person'] || row['CONTACT_PERSON'] || '',
-          contact_phone: row['Contact Phone'] || row['contact_phone'] || row['CONTACT_PHONE'] || '',
-          contact_email: row['Contact Email'] || row['contact_email'] || row['CONTACT_EMAIL'] || '',
-          maintenance_type: row['Maintenance Type'] || row['maintenance_type'] || 'hour',
-          service_interval_hours: parseInt(row['Service Interval Hours'] || row['service_interval_hours'] || 250),
-          service_interval_months: parseInt(row['Service Interval Months'] || row['service_interval_months'] || 6),
-          service_interval_years: parseInt(row['Service Interval Years'] || row['service_interval_years'] || 1)
-        };
+      reader.onload = async (e) => {
+        const data = new Uint8Array(e.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
         
-        // Validate required fields
-        if (!partData.part_number) {
-          console.warn('Skipping row: Missing Part Number', row);
-          failCount++;
-          continue;
+        console.log('📊 Excel data:', jsonData.length, 'rows');
+        
+        let successCount = 0;
+        let failCount = 0;
+        
+        for (const row of jsonData) {
+          const partData = {
+            part_number: row['Part Number'] || row['PartNumber'] || row['part_number'],
+            description: row['Description'] || row['description'] || '',
+            manufacturer: row['Manufacturer'] || row['manufacturer'] || '',
+            compatible_gse: row['Compatible GSE'] || row['compatible_gse'] || '',
+            location_bin: row['Location Bin'] || row['location_bin'] || '',
+            min_stock: parseInt(row['Min Stock'] || row['min_stock'] || 5),
+            quantity_on_hand: parseInt(row['Quantity On Hand'] || row['quantity_on_hand'] || 0),
+            contact_person: row['Contact Person'] || row['contact_person'] || '',
+            contact_phone: row['Contact Phone'] || row['contact_phone'] || '',
+            contact_email: row['Contact Email'] || row['contact_email'] || '',
+          };
+          
+          if (!partData.part_number) {
+            failCount++;
+            continue;
+          }
+          
+          try {
+            await axios.post(`${API_URL}/api/parts`, partData, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            successCount++;
+          } catch (err) {
+            failCount++;
+          }
         }
         
-        try {
-          await axios.post(`${API_URL}/api/parts`, partData, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          successCount++;
-        } catch (err) {
-          console.error('Error importing part:', partData.part_number, err);
-          failCount++;
-        }
-      }
+        setMessage(`✓ Import complete! ${successCount} parts added, ${failCount} failed.`);
+        setImporting(false);
+        await fetchParts();
+        setTimeout(() => setMessage(''), 5000);
+        event.target.value = '';
+      };
       
-      setMessage(`✓ Import complete! ${successCount} parts added, ${failCount} failed.`);
-      setImporting(false);
-      fetchParts();
-      setTimeout(() => setMessage(''), 5000);
+      reader.onerror = () => {
+        setError('Error reading file');
+        setImporting(false);
+        setTimeout(() => setError(''), 3000);
+      };
       
-      // Clear the file input
-      event.target.value = '';
-    };
-    
-    reader.onerror = () => {
-      setError('Error reading file');
+      reader.readAsArrayBuffer(file);
+    }).catch((err) => {
+      console.error('Failed to load Excel library:', err);
+      setError('Failed to load Excel import feature');
       setImporting(false);
       setTimeout(() => setError(''), 3000);
-    };
-    
-    reader.readAsArrayBuffer(file);
+    });
   };
 
   const canDelete = user?.role === 'admin' || user?.role === 'manager';
@@ -199,7 +218,22 @@ const PartsList = ({ token, user }) => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
         <h2>Parts Catalog</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
-          {/* Excel Import Button */}
+          <button 
+            onClick={handleManualRefresh} 
+            disabled={refreshing}
+            style={{
+              backgroundColor: '#3498db',
+              color: 'white',
+              border: 'none',
+              padding: '10px 15px',
+              borderRadius: '5px',
+              cursor: 'pointer',
+              opacity: refreshing ? 0.6 : 1
+            }}
+          >
+            {refreshing ? '⟳ Refreshing...' : '🔄 Refresh'}
+          </button>
+          
           <label htmlFor="excel-import-input" style={{
             backgroundColor: '#2c3e50',
             color: 'white',
@@ -235,6 +269,19 @@ const PartsList = ({ token, user }) => {
           textAlign: 'center'
         }}>
           ⏳ Importing parts from Excel... Please wait.
+        </div>
+      )}
+
+      {refreshing && (
+        <div style={{
+          backgroundColor: '#e8f4fd',
+          color: '#2196f3',
+          padding: '10px',
+          borderRadius: '5px',
+          margin: '10px 0',
+          textAlign: 'center'
+        }}>
+          ⟳ Refreshing parts list...
         </div>
       )}
 
@@ -436,7 +483,7 @@ const PartsList = ({ token, user }) => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal - NO WARNING MESSAGE */}
       {showDeleteConfirm && (
         <div style={{
           position: 'fixed',
@@ -460,7 +507,6 @@ const PartsList = ({ token, user }) => {
             <h3>Confirm Delete</h3>
             <p>Are you sure you want to delete:</p>
             <p><strong>{showDeleteConfirm.part_number}</strong><br/>{showDeleteConfirm.description}</p>
-            <p style={{ color: 'red' }}>⚠️ This action cannot be undone!</p>
             <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
               <button onClick={() => handleDeletePart(showDeleteConfirm)} style={{ backgroundColor: '#e74c3c', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '3px', cursor: 'pointer' }}>
                 Yes, Delete
