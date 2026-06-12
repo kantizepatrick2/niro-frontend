@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import API_URL from '../config/api';
 
-const ReceivePart = ({ token }) => {
+const ReceivePart = ({ token, onReceiveComplete }) => {
   const [mode, setMode] = useState('receive');
   const [formData, setFormData] = useState({
     part_number: '',
@@ -30,6 +29,8 @@ const ReceivePart = ({ token }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const API_URL = 'https://gse-backend.onrender.com';
+
   const handleReceive = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -46,6 +47,12 @@ const ReceivePart = ({ token }) => {
       
       setMessage(`✓ Part "${formData.part_number}" received successfully!`);
       setFormData({ part_number: '', quantity: '', reference_number: '', notes: '' });
+      
+      // 🔄 Refresh Parts List and Maintenance after successful receive
+      if (onReceiveComplete) {
+        onReceiveComplete();
+      }
+      
       setTimeout(() => setMessage(''), 3000);
       
     } catch (err) {
@@ -54,8 +61,7 @@ const ReceivePart = ({ token }) => {
         setNewPartData(prev => ({ ...prev, part_number: formData.part_number }));
         setError(`Part "${formData.part_number}" not found. Please add its details below.`);
       } else {
-        setMessage('✓ Part received successfully!');
-        setFormData({ part_number: '', quantity: '', reference_number: '', notes: '' });
+        setError(err.response?.data?.error || 'Error receiving parts');
       }
       setTimeout(() => setError(''), 5000);
     } finally {
@@ -68,6 +74,7 @@ const ReceivePart = ({ token }) => {
     setLoading(true);
     
     try {
+      // First create the part with maintenance type
       await axios.post(`${API_URL}/api/parts`, {
         part_number: newPartData.part_number,
         description: newPartData.description,
@@ -86,6 +93,7 @@ const ReceivePart = ({ token }) => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      // Then receive the quantity
       await axios.post(`${API_URL}/api/transactions/receive`, {
         part_number: newPartData.part_number,
         quantity: parseInt(formData.quantity),
@@ -113,40 +121,20 @@ const ReceivePart = ({ token }) => {
         contact_phone: '',
         contact_email: ''
       });
+      
+      // 🔄 Refresh Parts List and Maintenance after creating new part
+      if (onReceiveComplete) {
+        onReceiveComplete();
+      }
+      
       setTimeout(() => setMessage(''), 4000);
       
     } catch (err) {
-      setMessage(`✓ Part "${newPartData.part_number}" created and ${formData.quantity} units received successfully!`);
-      setShowNewPartForm(false);
-      setFormData({ part_number: '', quantity: '', reference_number: '', notes: '' });
-      setNewPartData({
-        part_number: '',
-        description: '',
-        manufacturer: '',
-        compatible_gse: '',
-        location_bin: '',
-        min_stock: 5,
-        maintenance_type: 'hour',
-        service_interval_hours: 250,
-        service_interval_months: 6,
-        service_interval_years: 1,
-        contact_person: '',
-        contact_phone: '',
-        contact_email: ''
-      });
-      setTimeout(() => setMessage(''), 4000);
+      console.error('Error creating part:', err);
+      setError('Error creating part. Please try again.');
+      setTimeout(() => setError(''), 5000);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getMaintenanceTypeDisplay = (type) => {
-    switch(type) {
-      case 'hour': return '⏱️ Hour-based (operating hours)';
-      case 'month': return '📅 Month-based (calendar months)';
-      case 'year': return '📆 Year-based (calendar years)';
-      case 'none': return '⭕ No maintenance required';
-      default: return type;
     }
   };
 
