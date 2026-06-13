@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_URL from '../config/api';
 
 const Transactions = ({ token }) => {
   const [transactions, setTransactions] = useState([]);
@@ -19,6 +18,8 @@ const Transactions = ({ token }) => {
     uniqueTechnicians: 0,
     uniqueGSE: 0
   });
+
+  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchTransactions();

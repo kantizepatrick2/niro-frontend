@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_URL from '../config/api';
 
 const PendingApprovals = ({ token, user }) => {
   const [requests, setRequests] = useState([]);
@@ -8,6 +7,8 @@ const PendingApprovals = ({ token, user }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState({});
+
+  const API_URL = 'https://gse-backend.onrender.com';
 
   useEffect(() => {
     fetchPendingRequests();

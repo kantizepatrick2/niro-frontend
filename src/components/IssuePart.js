@@ -1,134 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import API_URL from '../config/api';
 
-const IssuePart = ({ token, user }) => {
-  const [parts, setParts] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
+const ReceivePart = ({ token, onReceiveComplete }) => {
+  const [mode, setMode] = useState('receive');
   const [formData, setFormData] = useState({
     part_number: '',
     quantity: '',
-    gse_registration: '',
-    technician_name: '',
-    work_order: '',
-    notes: '',
-    maintenance_type: 'preventive'
+    reference_number: '',
+    notes: ''
   });
+  const [showNewPartForm, setShowNewPartForm] = useState(false);
+  const [newPartData, setNewPartData] = useState({
+    part_number: '',
+    description: '',
+    manufacturer: '',
+    compatible_gse: '',
+    location_bin: '',
+    min_stock: 5,
+    maintenance_type: 'hour',
+    service_interval_hours: 250,
+    service_interval_months: 6,
+    service_interval_years: 1,
+    contact_person: '',
+    contact_phone: '',
+    contact_email: ''
+  });
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchParts();
-    fetchMyRequests();
-  }, []);
+  const API_URL = 'https://gse-backend.onrender.com';
 
-  const fetchParts = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/parts`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setParts(response.data);
-    } catch (err) {
-      console.error('Error fetching parts:', err);
-      setError('Failed to load parts');
-    }
-  };
-
-  const fetchMyRequests = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/api/requests/my-requests`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMyRequests(response.data.requests || []);
-    } catch (err) {
-      console.error('Error fetching requests:', err);
-    }
-  };
-
-  const handleSubmit = async (e) => {
+  const handleReceive = async (e) => {
     e.preventDefault();
     setLoading(true);
     
-    let finalNotes = formData.notes;
-    if (formData.maintenance_type) {
-      const maintTypeText = formData.maintenance_type === 'preventive' ? '🔧 Preventive Maintenance' : '🛠️ Corrective Maintenance';
-      finalNotes = finalNotes ? `${maintTypeText} - ${finalNotes}` : maintTypeText;
-    }
-    
     try {
-      await axios.post(`${API_URL}/api/requests/issue`, {
+      await axios.post(`${API_URL}/api/transactions/receive`, {
         part_number: formData.part_number,
         quantity: parseInt(formData.quantity),
-        gse_registration: formData.gse_registration,
-        technician_name: formData.technician_name,
-        work_order: formData.work_order,
-        notes: finalNotes
+        reference_number: formData.reference_number,
+        notes: formData.notes
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setMessage('✅ Issue request submitted for approval!');
-      setFormData({
-        part_number: '',
-        quantity: '',
-        gse_registration: '',
-        technician_name: '',
-        work_order: '',
-        notes: '',
-        maintenance_type: 'preventive'
-      });
-      fetchMyRequests();
+      setMessage(`✓ Part "${formData.part_number}" received successfully!`);
+      setFormData({ part_number: '', quantity: '', reference_number: '', notes: '' });
+      
+      // 🔄 Refresh Parts List and Maintenance after successful receive
+      if (onReceiveComplete) {
+        onReceiveComplete();
+      }
+      
       setTimeout(() => setMessage(''), 3000);
+      
     } catch (err) {
-      setError(err.response?.data?.error || 'Error submitting request');
-      setTimeout(() => setError(''), 3000);
+      if (err.response?.data?.error === 'Part not found') {
+        setShowNewPartForm(true);
+        setNewPartData(prev => ({ ...prev, part_number: formData.part_number }));
+        setError(`Part "${formData.part_number}" not found. Please add its details below.`);
+      } else {
+        setError(err.response?.data?.error || 'Error receiving parts');
+      }
+      setTimeout(() => setError(''), 5000);
     } finally {
       setLoading(false);
     }
   };
 
-  const getStatusBadge = (status) => {
-    switch(status) {
-      case 'approved':
-        return { color: '#27ae60', bg: '#eafaf1', text: '✅ APPROVED' };
-      case 'rejected':
-        return { color: '#e74c3c', bg: '#fdeaea', text: '❌ REJECTED' };
-      case 'pending':
-        return { color: '#f39c12', bg: '#fef5e7', text: '⏳ PENDING' };
-      default:
-        return { color: '#95a5a6', bg: '#f5f5f5', text: status };
-    }
-  };
+  const handleCreateAndReceive = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      // First create the part with maintenance type
+      await axios.post(`${API_URL}/api/parts`, {
+        part_number: newPartData.part_number,
+        description: newPartData.description,
+        manufacturer: newPartData.manufacturer,
+        compatible_gse: newPartData.compatible_gse,
+        location_bin: newPartData.location_bin,
+        min_stock: newPartData.min_stock,
+        maintenance_type: newPartData.maintenance_type,
+        service_interval_hours: newPartData.service_interval_hours,
+        service_interval_months: newPartData.service_interval_months,
+        service_interval_years: newPartData.service_interval_years,
+        contact_person: newPartData.contact_person,
+        contact_phone: newPartData.contact_phone,
+        contact_email: newPartData.contact_email
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  const getMaintenanceTypeFromNotes = (notes) => {
-    if (notes && notes.includes('Preventive Maintenance')) {
-      return '🔧 Preventive';
-    }
-    if (notes && notes.includes('Corrective Maintenance')) {
-      return '🛠️ Corrective';
-    }
-    return '';
-  };
+      // Then receive the quantity
+      await axios.post(`${API_URL}/api/transactions/receive`, {
+        part_number: newPartData.part_number,
+        quantity: parseInt(formData.quantity),
+        reference_number: formData.reference_number,
+        notes: formData.notes
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
 
-  const cleanNotes = (notes) => {
-    if (notes) {
-      return notes.replace('🔧 Preventive Maintenance - ', '').replace('🛠️ Corrective Maintenance - ', '');
+      setMessage(`✓ Part "${newPartData.part_number}" created and ${formData.quantity} units received successfully!`);
+      setShowNewPartForm(false);
+      setFormData({ part_number: '', quantity: '', reference_number: '', notes: '' });
+      setNewPartData({
+        part_number: '',
+        description: '',
+        manufacturer: '',
+        compatible_gse: '',
+        location_bin: '',
+        min_stock: 5,
+        maintenance_type: 'hour',
+        service_interval_hours: 250,
+        service_interval_months: 6,
+        service_interval_years: 1,
+        contact_person: '',
+        contact_phone: '',
+        contact_email: ''
+      });
+      
+      // 🔄 Refresh Parts List and Maintenance after creating new part
+      if (onReceiveComplete) {
+        onReceiveComplete();
+      }
+      
+      setTimeout(() => setMessage(''), 4000);
+      
+    } catch (err) {
+      console.error('Error creating part:', err);
+      setError('Error creating part. Please try again.');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setLoading(false);
     }
-    return notes;
   };
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
-        {/* Submit Request Form */}
-        <div style={{ flex: 1, minWidth: '300px' }}>
-          <h2>📤 Issue Spare Parts</h2>
+      <h2>Receive Parts</h2>
+      
+      {!showNewPartForm ? (
+        <>
           <p style={{ color: '#666', marginBottom: '20px' }}>
-            Submit an issue request for approval. Stock will be deducted only after a Manager or Admin approves.
+            Enter a part number to receive stock. If the part doesn't exist, you'll be prompted to add it.
           </p>
           
-          <form onSubmit={handleSubmit} style={{
+          <form onSubmit={handleReceive} style={{
             backgroundColor: '#f9f9f9',
             padding: '20px',
             borderRadius: '8px',
@@ -136,9 +156,11 @@ const IssuePart = ({ token, user }) => {
           }}>
             <div style={{ marginBottom: '15px' }}>
               <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Part Number *</label>
-              <select
+              <input
+                type="text"
+                placeholder="Enter part number"
                 value={formData.part_number}
-                onChange={(e) => setFormData({...formData, part_number: e.target.value})}
+                onChange={(e) => setFormData({...formData, part_number: e.target.value.toUpperCase()})}
                 required
                 style={{
                   width: '100%',
@@ -147,14 +169,7 @@ const IssuePart = ({ token, user }) => {
                   border: '1px solid #ddd',
                   fontSize: '14px'
                 }}
-              >
-                <option value="">-- Select a part --</option>
-                {parts.map(part => (
-                  <option key={part.id} value={part.part_number}>
-                    {part.part_number} - {part.description} (Stock: {part.quantity_on_hand})
-                  </option>
-                ))}
-              </select>
+              />
             </div>
             
             <div style={{ marginBottom: '15px' }}>
@@ -176,78 +191,12 @@ const IssuePart = ({ token, user }) => {
             </div>
             
             <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Maintenance Type *</label>
-              <div style={{ display: 'flex', gap: '20px', marginTop: '5px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 15px', borderRadius: '5px', backgroundColor: formData.maintenance_type === 'preventive' ? '#d4edda' : '#f5f5f5', border: formData.maintenance_type === 'preventive' ? '1px solid #27ae60' : '1px solid #ddd' }}>
-                  <input
-                    type="radio"
-                    name="maintenance_type"
-                    value="preventive"
-                    checked={formData.maintenance_type === 'preventive'}
-                    onChange={(e) => setFormData({...formData, maintenance_type: e.target.value})}
-                  />
-                  <span>🔧 Preventive Maintenance</span>
-                  <small style={{ fontSize: '11px', color: '#666', marginLeft: '5px' }}>(Scheduled / Routine)</small>
-                </label>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '8px 15px', borderRadius: '5px', backgroundColor: formData.maintenance_type === 'corrective' ? '#fdeaea' : '#f5f5f5', border: formData.maintenance_type === 'corrective' ? '1px solid #e74c3c' : '1px solid #ddd' }}>
-                  <input
-                    type="radio"
-                    name="maintenance_type"
-                    value="corrective"
-                    checked={formData.maintenance_type === 'corrective'}
-                    onChange={(e) => setFormData({...formData, maintenance_type: e.target.value})}
-                  />
-                  <span>🛠️ Corrective Maintenance</span>
-                  <small style={{ fontSize: '11px', color: '#666', marginLeft: '5px' }}>(Unscheduled / Repair)</small>
-                </label>
-              </div>
-              <small style={{ color: '#666', display: 'block', marginTop: '5px' }}>
-                Specify whether this part is for preventive (scheduled) or corrective (repair) maintenance
-              </small>
-            </div>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>GSE Registration *</label>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>PO / Reference Number</label>
               <input
                 type="text"
-                value={formData.gse_registration}
-                onChange={(e) => setFormData({...formData, gse_registration: e.target.value})}
-                placeholder="e.g., GSE-1234"
-                required
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Technician Name</label>
-              <input
-                type="text"
-                value={formData.technician_name}
-                onChange={(e) => setFormData({...formData, technician_name: e.target.value})}
-                placeholder="Enter technician name"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  borderRadius: '4px',
-                  border: '1px solid #ddd',
-                  fontSize: '14px'
-                }}
-              />
-            </div>
-            
-            <div style={{ marginBottom: '15px' }}>
-              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Work Order</label>
-              <input
-                type="text"
-                value={formData.work_order}
-                onChange={(e) => setFormData({...formData, work_order: e.target.value})}
-                placeholder="e.g., WO-12345"
+                value={formData.reference_number}
+                onChange={(e) => setFormData({...formData, reference_number: e.target.value})}
+                placeholder="e.g., PO-12345"
                 style={{
                   width: '100%',
                   padding: '8px',
@@ -264,7 +213,7 @@ const IssuePart = ({ token, user }) => {
                 value={formData.notes}
                 onChange={(e) => setFormData({...formData, notes: e.target.value})}
                 rows="3"
-                placeholder="Reason for issue, additional details..."
+                placeholder="Any additional notes..."
                 style={{
                   width: '100%',
                   padding: '8px',
@@ -280,7 +229,7 @@ const IssuePart = ({ token, user }) => {
               type="submit"
               disabled={loading}
               style={{
-                backgroundColor: '#f39c12',
+                backgroundColor: '#28a745',
                 color: 'white',
                 border: 'none',
                 padding: '10px 20px',
@@ -291,71 +240,410 @@ const IssuePart = ({ token, user }) => {
                 width: '100%'
               }}
             >
-              {loading ? 'Submitting...' : '📋 Submit for Approval'}
+              {loading ? 'Processing...' : '✓ Receive Parts'}
             </button>
           </form>
-        </div>
-        
-        {/* My Requests List */}
-        <div style={{ flex: 1, minWidth: '300px' }}>
-          <h2>📋 My Requests</h2>
-          <p style={{ color: '#666', marginBottom: '20px' }}>
-            Track your submitted requests and their approval status.
-          </p>
+        </>
+      ) : (
+        <div>
+          <div style={{
+            backgroundColor: '#fff3cd',
+            color: '#856404',
+            padding: '10px',
+            borderRadius: '5px',
+            marginBottom: '20px',
+            border: '1px solid #ffeeba'
+          }}>
+            <strong>⚠️ Part Not Found</strong><br />
+            Part "{newPartData.part_number}" does not exist. Please fill in the details below to create it.
+          </div>
           
-          {myRequests.length === 0 ? (
-            <p style={{ color: '#666', textAlign: 'center', padding: '40px' }}>No requests submitted yet.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f2f2f2' }}>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Part</th>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Type</th>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Qty</th>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>GSE</th>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Status</th>
-                    <th style={{ border: '1px solid #ddd', padding: '10px', textAlign: 'left' }}>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {myRequests.map(req => {
-                    const statusStyle = getStatusBadge(req.status);
-                    const maintType = getMaintenanceTypeFromNotes(req.notes);
-                    const cleanNote = cleanNotes(req.notes);
-                    return (
-                      <tr key={req.id}>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold' }}>{req.part_number}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', fontSize: '12px' }}>
-                          {maintType || '-'}
-                        </td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>{req.quantity}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', fontSize: '12px' }}>{req.gse_registration || '-'}</td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px' }}>
-                          <span style={{ color: statusStyle.color, fontWeight: 'bold' }}>{statusStyle.text}</span>
-                          {req.admin_comment && (
-                            <div style={{ fontSize: '11px', color: '#666', marginTop: '3px' }}>
-                              Comment: {req.admin_comment}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ border: '1px solid #ddd', padding: '8px', fontSize: '12px' }}>
-                          {new Date(req.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          <form onSubmit={handleCreateAndReceive} style={{
+            backgroundColor: '#f9f9f9',
+            padding: '20px',
+            borderRadius: '8px',
+            border: '1px solid #ddd'
+          }}>
+            <h3>New Part Information</h3>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Part Number *</label>
+              <input
+                type="text"
+                value={newPartData.part_number}
+                readOnly
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  backgroundColor: '#e9ecef',
+                  fontSize: '14px'
+                }}
+              />
             </div>
-          )}
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Description *</label>
+              <input
+                type="text"
+                value={newPartData.description}
+                onChange={(e) => setNewPartData({...newPartData, description: e.target.value})}
+                required
+                placeholder="Enter part description"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Manufacturer</label>
+              <input
+                type="text"
+                value={newPartData.manufacturer}
+                onChange={(e) => setNewPartData({...newPartData, manufacturer: e.target.value})}
+                placeholder="Manufacturer name"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Compatible GSE</label>
+              <input
+                type="text"
+                value={newPartData.compatible_gse}
+                onChange={(e) => setNewPartData({...newPartData, compatible_gse: e.target.value})}
+                placeholder="e.g., Tow Tractor, GPU"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Bin Location</label>
+              <input
+                type="text"
+                value={newPartData.location_bin}
+                onChange={(e) => setNewPartData({...newPartData, location_bin: e.target.value})}
+                placeholder="e.g., A-12"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Minimum Stock Alert</label>
+              <input
+                type="number"
+                value={newPartData.min_stock}
+                onChange={(e) => setNewPartData({...newPartData, min_stock: parseInt(e.target.value) || 5})}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>🔧 Maintenance Type *</h4>
+            <div style={{ marginBottom: '15px' }}>
+              <select
+                value={newPartData.maintenance_type}
+                onChange={(e) => setNewPartData({...newPartData, maintenance_type: e.target.value})}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="hour">⏱️ Hour-based (operating hours)</option>
+                <option value="month">📅 Month-based (calendar months)</option>
+                <option value="year">📆 Year-based (calendar years)</option>
+                <option value="none">⭕ No maintenance required</option>
+              </select>
+            </div>
+
+            {newPartData.maintenance_type === 'hour' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (hours)</label>
+                <input
+                  type="number"
+                  value={newPartData.service_interval_hours}
+                  onChange={(e) => setNewPartData({...newPartData, service_interval_hours: parseInt(e.target.value) || 250})}
+                  placeholder="e.g., 250 hours"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>How many operating hours before service is needed?</p>
+              </div>
+            )}
+
+            {newPartData.maintenance_type === 'month' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (months)</label>
+                <input
+                  type="number"
+                  value={newPartData.service_interval_months}
+                  onChange={(e) => setNewPartData({...newPartData, service_interval_months: parseInt(e.target.value) || 6})}
+                  placeholder="e.g., 6 months"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>How many months before service is needed?</p>
+              </div>
+            )}
+
+            {newPartData.maintenance_type === 'year' && (
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Service Interval (years)</label>
+                <input
+                  type="number"
+                  value={newPartData.service_interval_years}
+                  onChange={(e) => setNewPartData({...newPartData, service_interval_years: parseInt(e.target.value) || 1})}
+                  placeholder="e.g., 1 year"
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    fontSize: '14px'
+                  }}
+                />
+                <p style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>How many years before service is needed?</p>
+              </div>
+            )}
+
+            {newPartData.maintenance_type === 'none' && (
+              <div style={{ marginBottom: '15px', backgroundColor: '#e8f4fd', padding: '10px', borderRadius: '5px' }}>
+                <p style={{ fontSize: '13px', color: '#2c3e50', margin: 0 }}>ℹ️ This part does not require scheduled maintenance. It will be marked as "No Maintenance" in the schedule.</p>
+              </div>
+            )}
+
+            <h4 style={{ marginTop: '20px', marginBottom: '10px' }}>📞 Contact Details (Optional)</h4>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Contact Person</label>
+              <input
+                type="text"
+                value={newPartData.contact_person}
+                onChange={(e) => setNewPartData({...newPartData, contact_person: e.target.value})}
+                placeholder="Contact person name"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Contact Phone</label>
+              <input
+                type="tel"
+                value={newPartData.contact_phone}
+                onChange={(e) => setNewPartData({...newPartData, contact_phone: e.target.value})}
+                placeholder="Phone number"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Contact Email</label>
+              <input
+                type="email"
+                value={newPartData.contact_email}
+                onChange={(e) => setNewPartData({...newPartData, contact_email: e.target.value})}
+                placeholder="Email address"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Initial Quantity *</label>
+              <input
+                type="number"
+                value={formData.quantity}
+                onChange={(e) => setFormData({...formData, quantity: e.target.value})}
+                required
+                placeholder="How many units?"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>PO / Reference Number</label>
+              <input
+                type="text"
+                value={formData.reference_number}
+                onChange={(e) => setFormData({...formData, reference_number: e.target.value})}
+                placeholder="Purchase order number"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Notes</label>
+              <textarea
+                value={formData.notes}
+                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                rows="3"
+                placeholder="Any additional notes..."
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  border: '1px solid #ddd',
+                  fontSize: '14px',
+                  resize: 'vertical'
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowNewPartForm(false);
+                  setError('');
+                  setNewPartData({
+                    part_number: '',
+                    description: '',
+                    manufacturer: '',
+                    compatible_gse: '',
+                    location_bin: '',
+                    min_stock: 5,
+                    maintenance_type: 'hour',
+                    service_interval_hours: 250,
+                    service_interval_months: 6,
+                    service_interval_years: 1,
+                    contact_person: '',
+                    contact_phone: '',
+                    contact_email: ''
+                  });
+                }}
+                style={{
+                  backgroundColor: '#95a5a6',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  backgroundColor: '#27ae60',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  flex: 1
+                }}
+              >
+                {loading ? 'Creating...' : '✅ Create Part & Receive Stock'}
+              </button>
+            </div>
+          </form>
         </div>
-      </div>
+      )}
+
+      {message && (
+        <div style={{
+          backgroundColor: '#d4edda',
+          color: '#155724',
+          padding: '10px',
+          borderRadius: '5px',
+          margin: '10px 0',
+          border: '1px solid #c3e6cb'
+        }}>
+          {message}
+        </div>
+      )}
       
-      {message && <div style={{ backgroundColor: '#d4edda', color: '#155724', padding: '10px', borderRadius: '5px', margin: '10px 0', border: '1px solid #c3e6cb' }}>{message}</div>}
-      {error && <div style={{ backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '5px', margin: '10px 0', border: '1px solid #f5c6cb' }}>{error}</div>}
+      {error && !showNewPartForm && (
+        <div style={{
+          backgroundColor: '#f8d7da',
+          color: '#721c24',
+          padding: '10px',
+          borderRadius: '5px',
+          margin: '10px 0',
+          border: '1px solid #f5c6cb'
+        }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 };
 
-export default IssuePart;
+export default ReceivePart;
