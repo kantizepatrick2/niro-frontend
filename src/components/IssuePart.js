@@ -29,7 +29,7 @@ const ReceivePart = ({ token, onReceiveComplete }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const API_URL = 'https://gse-backend.onrender.com';
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   const handleReceive = async (e) => {
     e.preventDefault();

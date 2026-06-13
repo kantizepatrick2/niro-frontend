@@ -19,7 +19,7 @@ const Transactions = ({ token }) => {
     uniqueGSE: 0
   });
 
-  const API_URL = 'https://gse-backend.onrender.com';
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   useEffect(() => {
     fetchTransactions();

@@ -8,7 +8,7 @@ const PendingApprovals = ({ token, user }) => {
   const [loading, setLoading] = useState(false);
   const [comment, setComment] = useState({});
 
-  const API_URL = 'https://gse-backend.onrender.com';
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   useEffect(() => {
     fetchPendingRequests();

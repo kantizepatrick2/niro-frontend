@@ -61,7 +61,7 @@ const GSEMaintenance = ({ token, user, onMaintenanceUpdate }) => {
     last_service_year: null
   });
 
-  const API_URL = 'https://gse-backend.onrender.com';
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   useEffect(() => {
     fetchEquipment();
