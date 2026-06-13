@@ -269,7 +269,7 @@ const Dashboard = ({ token, user }) => {
                     <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', color: '#e74c3c' }}>{part.quantity_on_hand}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.min_stock}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.location_bin || '-'}</td>
-                  </tr>
+                  </table>
                 ))}
               </tbody>
             </table>
@@ -331,23 +331,6 @@ const Dashboard = ({ token, user }) => {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Info Banner */}
-      <div style={{
-        backgroundColor: '#e8f4fd',
-        borderRadius: '8px',
-        padding: '15px',
-        marginTop: '20px',
-        border: '1px solid #bde0fe'
-      }}>
-        <p style={{ margin: 0, fontSize: '13px' }}>
-          <strong>🔔 How Alerts Work (Dual Condition):</strong><br />
-          ⏱️ <strong>Hour-based:</strong> Alert triggers when ≤ 40 hours remaining to target OR ≤ 4 days to service date – <strong>whichever comes FIRST</strong><br />
-          📅 <strong>Month-based:</strong> Alert triggers when ≤ 4 days remaining to service date<br />
-          📆 <strong>Year-based:</strong> Alert triggers when ≤ 30 days remaining to service year<br />
-          🟡 <strong>Due Soon:</strong> Service is approaching | 🔴 <strong>Overdue:</strong> Service date passed OR hours exceeded target
-        </p>
       </div>
     </div>
   );
