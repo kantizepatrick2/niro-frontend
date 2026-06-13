@@ -269,7 +269,7 @@ const Dashboard = ({ token, user }) => {
                     <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', color: '#e74c3c' }}>{part.quantity_on_hand}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.min_stock}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.location_bin || '-'}</td>
-                  </table>
+                  </tr>
                 ))}
               </tbody>
             </table>
