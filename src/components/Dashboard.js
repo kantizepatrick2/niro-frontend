@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import API_URL from '../config/api';
 
 const Dashboard = ({ token, user }) => {
   const [lowStockParts, setLowStockParts] = useState([]);
   const [maintenanceAlerts, setMaintenanceAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [stats, setStats] = useState({
     totalParts: 0,
     totalTransactions: 0,
     pendingApprovals: 0
   });
+
+  const API_URL = 'https://niro-backend-695t.onrender.com';
 
   useEffect(() => {
     fetchDashboardData();
@@ -19,10 +19,7 @@ const Dashboard = ({ token, user }) => {
 
   const fetchDashboardData = async () => {
     try {
-      setError('');
-      
-      // Prepare promises array for parallel execution
-      const promises = [
+      const [lowStockRes, maintenanceRes, partsRes] = await Promise.all([
         axios.get(`${API_URL}/api/reports/low-stock`, {
           headers: { Authorization: `Bearer ${token}` }
         }),
@@ -32,49 +29,33 @@ const Dashboard = ({ token, user }) => {
         axios.get(`${API_URL}/api/parts`, {
           headers: { Authorization: `Bearer ${token}` }
         })
-      ];
-      
-      // Add pending approvals for approvers
-      const isApprover = user?.role === 'admin' || user?.role === 'manager';
-      if (isApprover) {
-        promises.push(
-          axios.get(`${API_URL}/api/requests/pending`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-        );
-      }
-      
-      // Execute all API calls in PARALLEL
-      const results = await Promise.all(promises);
-      
-      // Parse results
-      const lowStockRes = results[0];
-      const maintenanceRes = results[1];
-      const partsRes = results[2];
-      
+      ]);
+
       setLowStockParts(lowStockRes.data);
-      
+
       const allMaintenance = maintenanceRes.data.equipment || [];
       const alerts = allMaintenance.filter(item => 
         item.status === 'overdue' || item.status === 'due_soon'
       );
       setMaintenanceAlerts(alerts);
-      
+
       let pendingCount = 0;
-      if (isApprover && results[3]) {
-        pendingCount = results[3].data.requests?.length || 0;
+      if (user?.role === 'admin' || user?.role === 'manager') {
+        const pendingRes = await axios.get(`${API_URL}/api/requests/pending`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        pendingCount = pendingRes.data.requests?.length || 0;
       }
-      
+
       setStats({
-        totalParts: partsRes.data.length || 0,
+        totalParts: partsRes.data.length,
         totalTransactions: 0,
         pendingApprovals: pendingCount
       });
-      
+
       setLoading(false);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
-      setError('Failed to load dashboard data. Please refresh the page.');
       setLoading(false);
     }
   };
@@ -190,95 +171,10 @@ const Dashboard = ({ token, user }) => {
     }
   };
 
-  // Skeleton Loading Components
-  const SkeletonCard = () => (
-    <div style={{
-      backgroundColor: '#f0f0f0',
-      padding: '20px',
-      borderRadius: '8px',
-      textAlign: 'center',
-      animation: 'pulse 1.5s ease-in-out infinite'
-    }}>
-      <div style={{ height: '28px', backgroundColor: '#e0e0e0', borderRadius: '4px', marginBottom: '10px' }}></div>
-      <div style={{ height: '20px', backgroundColor: '#e0e0e0', borderRadius: '4px', width: '80%', margin: '0 auto' }}></div>
-    </div>
-  );
-
-  const SkeletonRow = () => (
-    <div style={{ height: '20px', backgroundColor: '#e0e0e0', borderRadius: '4px', marginBottom: '10px' }}></div>
-  );
-
-  // Loading state with skeleton UI
   if (loading) {
     return (
-      <div>
-        <style>
-          {`
-            @keyframes pulse {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.5; }
-            }
-          `}
-        </style>
-        <h2>Dashboard</h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px',
-          marginBottom: '30px'
-        }}>
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-        <div style={{ backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '20px', marginBottom: '30px' }}>
-          <h3>⚠️ Low Stock Alerts</h3>
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
-        </div>
-        <div style={{ backgroundColor: '#f9f9f9', borderRadius: '8px', padding: '20px' }}>
-          <h3>🔧 Maintenance Alerts</h3>
-          <SkeletonRow />
-          <SkeletonRow />
-          <SkeletonRow />
-        </div>
-      </div>
-    );
-  }
-
-  // Error state with retry button
-  if (error) {
-    return (
-      <div>
-        <h2>Dashboard</h2>
-        <div style={{
-          backgroundColor: '#f8d7da',
-          color: '#721c24',
-          padding: '20px',
-          borderRadius: '8px',
-          textAlign: 'center'
-        }}>
-          <p>{error}</p>
-          <button 
-            onClick={() => {
-              setLoading(true);
-              fetchDashboardData();
-            }}
-            style={{
-              backgroundColor: '#3498db',
-              color: 'white',
-              border: 'none',
-              padding: '10px 20px',
-              borderRadius: '5px',
-              cursor: 'pointer',
-              marginTop: '10px'
-            }}
-          >
-            Retry
-          </button>
-        </div>
+      <div style={{ textAlign: 'center', padding: '50px' }}>
+        <div>Loading dashboard...</div>
       </div>
     );
   }
@@ -290,7 +186,6 @@ const Dashboard = ({ token, user }) => {
       <h2>Dashboard</h2>
       <p>Welcome back, <strong>{user?.full_name || user?.username}</strong>!</p>
 
-      {/* Stats Cards */}
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -344,7 +239,6 @@ const Dashboard = ({ token, user }) => {
         </div>
       </div>
 
-      {/* Low Stock Alerts Section */}
       <div style={{
         backgroundColor: '#f9f9f9',
         borderRadius: '8px',
@@ -354,7 +248,11 @@ const Dashboard = ({ token, user }) => {
       }}>
         <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span>⚠️ Low Stock Alerts</span>
-          {lowStockParts.length > 0 && <span style={{ backgroundColor: '#e74c3c', color: 'white', padding: '2px 8px', borderRadius: '20px', fontSize: '12px' }}>{lowStockParts.length}</span>}
+          {lowStockParts.length > 0 && (
+            <span style={{ backgroundColor: '#e74c3c', color: 'white', padding: '2px 8px', borderRadius: '20px', fontSize: '12px' }}>
+              {lowStockParts.length}
+            </span>
+          )}
         </h3>
         
         {lowStockParts.length === 0 ? (
@@ -372,14 +270,14 @@ const Dashboard = ({ token, user }) => {
                 </tr>
               </thead>
               <tbody>
-                {lowStockParts.map(part => (
+                {lowStockParts.map((part) => (
                   <tr key={part.part_number} style={{ backgroundColor: '#fdeaea' }}>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.part_number}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.description}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px', fontWeight: 'bold', color: '#e74c3c' }}>{part.quantity_on_hand}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.min_stock}</td>
                     <td style={{ border: '1px solid #ddd', padding: '8px' }}>{part.location_bin || '-'}</td>
-                  </td>
+                  </tr>
                 ))}
               </tbody>
             </table>
@@ -387,7 +285,6 @@ const Dashboard = ({ token, user }) => {
         )}
       </div>
 
-      {/* Maintenance Alerts Section */}
       <div style={{
         backgroundColor: '#f9f9f9',
         borderRadius: '8px',
@@ -396,7 +293,11 @@ const Dashboard = ({ token, user }) => {
       }}>
         <h3 style={{ marginTop: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span>🔧 Maintenance Alerts</span>
-          {maintenanceAlerts.length > 0 && <span style={{ backgroundColor: '#f39c12', color: 'white', padding: '2px 8px', borderRadius: '20px', fontSize: '12px' }}>{maintenanceAlerts.length}</span>}
+          {maintenanceAlerts.length > 0 && (
+            <span style={{ backgroundColor: '#f39c12', color: 'white', padding: '2px 8px', borderRadius: '20px', fontSize: '12px' }}>
+              {maintenanceAlerts.length}
+            </span>
+          )}
         </h3>
         
         {maintenanceAlerts.length === 0 ? (
@@ -415,7 +316,7 @@ const Dashboard = ({ token, user }) => {
                 </tr>
               </thead>
               <tbody>
-                {maintenanceAlerts.map(item => {
+                {maintenanceAlerts.map((item) => {
                   const statusStyle = getStatusStyle(item.status);
                   const remainingDisplay = getRemainingDisplay(item);
                   const alertReason = getAlertReason(item);
