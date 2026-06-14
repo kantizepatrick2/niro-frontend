@@ -65,7 +65,7 @@ const Login = ({ onLogin }) => {
     });
   }, []);
 
-  // Rotate background images every 8 seconds (no fade effect)
+  // Rotate background images every 8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
@@ -147,7 +147,7 @@ const Login = ({ onLogin }) => {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background Image Container with Zoom Effect */}
+      {/* Background Image Container with Zoom Effect and Brightness */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -166,18 +166,19 @@ const Login = ({ onLogin }) => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          animation: 'zoom 20s ease-in-out infinite'
+          animation: 'zoom 20s ease-in-out infinite',
+          filter: 'brightness(1.1) contrast(1.05)'
         }} />
       </div>
 
-      {/* Dark Overlay for Text Readability */}
+      {/* Lighter Overlay for Better Visibility (reduced opacity) */}
       <div style={{
         position: 'absolute',
         top: 0,
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.5) 100%)',
+        background: 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.25) 100%)',
         zIndex: 1
       }} />
 
