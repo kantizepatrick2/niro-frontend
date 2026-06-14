@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import logo from '../assets/logo.png';
 
+// Import your 5 local GSE images
+import gse1 from '../assets/gse1.jpg';
+import gse2 from '../assets/gse2.jpg';
+import gse3 from '../assets/gse3.jpg';
+import gse4 from '../assets/gse4.jpg';
+import gse5 from '../assets/gse5.jpg';
+
 const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -18,47 +25,37 @@ const Login = ({ onLogin }) => {
   const [nextBgIndex, setNextBgIndex] = useState(1);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Array of dynamic GSE background images (aircraft ground support equipment in action)
+  // Array of 6 GSE background images (5 local + 1 Unsplash)
   const backgroundImages = [
     {
+      url: gse1,
+      title: '🛞 Ground Support Equipment',
+      description: 'GSE equipment servicing aircraft on tarmac'
+    },
+    {
+      url: gse2,
+      title: '🛻 Baggage Handling',
+      description: 'Baggage carts and tugs in operation'
+    },
+    {
+      url: gse3,
+      title: '✈️ Airport Tarmac Operations',
+      description: 'Ground crew and GSE equipment preparing aircraft'
+    },
+    {
+      url: gse4,
+      title: '🚛 GSE Service Vehicles',
+      description: 'Multiple service vehicles supporting aircraft'
+    },
+    {
+      url: gse5,
+      title: '👥 Passenger Boarding',
+      description: 'Passengers boarding aircraft through jet bridge'
+    },
+    {
       url: 'https://images.unsplash.com/photo-1542296332-2e4473faf563?w=1920&h=1080&fit=crop',
-      title: 'Tow Tractor Towing Aircraft',
+      title: '🛞 Tow Tractor Towing Aircraft',
       description: 'GSE tow tractor moving aircraft to gate'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1570710891163-6d3b5c47248b?w=1920&h=1080&fit=crop',
-      title: 'Ground Power Unit (GPU)',
-      description: 'GPU providing electrical power to parked aircraft'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1556388158-158ea5ccacbd?w=1920&h=1080&fit=crop',
-      title: 'Baggage Handling System',
-      description: 'Baggage loaders transferring luggage to aircraft'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1566737236500-c8ac43014a67?w=1920&h=1080&fit=crop',
-      title: 'Aircraft Refueling',
-      description: 'Fuel truck servicing aircraft before departure'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=1920&h=1080&fit=crop',
-      title: 'Ground Crew Operations',
-      description: 'Ground handling team preparing aircraft'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1920&h=1080&fit=crop',
-      title: 'Airport Tarmac Operations',
-      description: 'Multiple GSE units servicing aircraft'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1520437358207-323b43b50729?w=1920&h=1080&fit=crop',
-      title: 'Catering Truck',
-      description: 'Catering vehicle delivering meals to aircraft'
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1540962351504-03099e0a754b?w=1920&h=1080&fit=crop',
-      title: 'Aircraft Maintenance',
-      description: 'Maintenance crew performing pre-flight checks'
     }
   ];
 
@@ -75,7 +72,6 @@ const Login = ({ onLogin }) => {
     const interval = setInterval(() => {
       setIsTransitioning(true);
       
-      // After a short delay, change the image and reset transition state
       setTimeout(() => {
         setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
         setNextBgIndex((currentBgIndex + 2) % backgroundImages.length);
@@ -85,7 +81,7 @@ const Login = ({ onLogin }) => {
         }, 500);
       }, 500);
       
-    }, 8000); // Change image every 8 seconds
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [currentBgIndex]);
@@ -154,7 +150,6 @@ const Login = ({ onLogin }) => {
   };
 
   const currentImage = backgroundImages[currentBgIndex];
-  const nextImage = backgroundImages[nextBgIndex];
 
   return (
     <div style={{
@@ -174,7 +169,6 @@ const Login = ({ onLogin }) => {
         bottom: '-5%',
         zIndex: 0
       }}>
-        {/* Current Image */}
         <div style={{
           position: 'absolute',
           top: 0,
