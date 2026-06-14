@@ -171,7 +171,7 @@ const Login = ({ onLogin }) => {
         }} />
       </div>
 
-      {/* Lighter Overlay for Better Visibility (reduced opacity) */}
+      {/* Lighter Overlay for Better Visibility */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -211,16 +211,10 @@ const Login = ({ onLogin }) => {
         <h2 style={{ 
           textAlign: 'center', 
           color: '#2c3e50', 
-          marginBottom: '8px',
-          fontSize: '24px'
-        }}>NIRO Ground Services</h2>
-        
-        <p style={{ 
-          textAlign: 'center', 
-          color: '#7f8c8d', 
           marginBottom: '25px',
-          fontSize: '14px'
-        }}>GSE Spare Parts Inventory System</p>
+          fontSize: '20px',
+          fontWeight: 'bold'
+        }}>GSE Spare Parts and Maintenance Management</h2>
         
         {!showForgotPassword ? (
           <form onSubmit={handleSubmit}>
