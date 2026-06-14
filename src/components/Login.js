@@ -147,7 +147,7 @@ const Login = ({ onLogin }) => {
       position: 'relative',
       overflow: 'hidden'
     }}>
-      {/* Background Image Container with Zoom Effect and Increased Brightness */}
+      {/* Background Image Container with Brightness (No Zoom Animation) */}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -166,7 +166,6 @@ const Login = ({ onLogin }) => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          animation: 'zoom 20s ease-in-out infinite',
           filter: 'brightness(1.3) contrast(1.1)'
         }} />
       </div>
@@ -484,18 +483,6 @@ const Login = ({ onLogin }) => {
       {/* CSS Animations */}
       <style>
         {`
-          @keyframes zoom {
-            0% {
-              transform: scale(1);
-            }
-            50% {
-              transform: scale(1.1);
-            }
-            100% {
-              transform: scale(1);
-            }
-          }
-          
           @keyframes slideUp {
             from {
               opacity: 0;
