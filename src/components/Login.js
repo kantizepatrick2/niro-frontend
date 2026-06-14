@@ -22,8 +22,6 @@ const Login = ({ onLogin }) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetToken, setResetToken] = useState('');
   const [currentBgIndex, setCurrentBgIndex] = useState(0);
-  const [nextBgIndex, setNextBgIndex] = useState(1);
-  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Array of 6 GSE background images (5 local + 1 Unsplash)
   const backgroundImages = [
@@ -67,26 +65,15 @@ const Login = ({ onLogin }) => {
     });
   }, []);
 
-  // Rotate background images every 8 seconds with smooth transition
+  // Rotate background images every 8 seconds (no fade effect)
   useEffect(() => {
     const interval = setInterval(() => {
-      setIsTransitioning(true);
-      
-      setTimeout(() => {
-        setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
-        setNextBgIndex((currentBgIndex + 2) % backgroundImages.length);
-        
-        setTimeout(() => {
-          setIsTransitioning(false);
-        }, 500);
-      }, 500);
-      
+      setCurrentBgIndex((prevIndex) => (prevIndex + 1) % backgroundImages.length);
     }, 8000);
 
     return () => clearInterval(interval);
-  }, [currentBgIndex]);
+  }, []);
 
-  // HARDCODED backend URL for NIRO
   const API_URL = 'https://niro-backend-695t.onrender.com';
 
   const handleSubmit = async (e) => {
@@ -163,10 +150,10 @@ const Login = ({ onLogin }) => {
       {/* Background Image Container with Zoom Effect */}
       <div style={{
         position: 'absolute',
-        top: '-5%',
-        left: '-5%',
-        right: '-5%',
-        bottom: '-5%',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         zIndex: 0
       }}>
         <div style={{
@@ -179,11 +166,7 @@ const Login = ({ onLogin }) => {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          transform: 'scale(1.05)',
-          transition: 'transform 8s ease-in-out',
-          animation: 'zoom 20s ease-in-out infinite',
-          opacity: isTransitioning ? 0 : 1,
-          transition: 'opacity 0.5s ease-in-out'
+          animation: 'zoom 20s ease-in-out infinite'
         }} />
       </div>
 
@@ -198,56 +181,6 @@ const Login = ({ onLogin }) => {
         zIndex: 1
       }} />
 
-      {/* Image Info Overlay (Bottom Left) */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '20px',
-        zIndex: 2,
-        backgroundColor: 'rgba(0,0,0,0.7)',
-        color: 'white',
-        padding: '8px 16px',
-        borderRadius: '8px',
-        backdropFilter: 'blur(5px)',
-        fontFamily: 'sans-serif'
-      }}>
-        <div style={{ fontSize: '14px', fontWeight: 'bold' }}>{currentImage.title}</div>
-        <div style={{ fontSize: '11px', opacity: 0.8 }}>{currentImage.description}</div>
-      </div>
-
-      {/* Slide Indicator */}
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        zIndex: 2,
-        display: 'flex',
-        gap: '8px',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        padding: '8px 12px',
-        borderRadius: '20px',
-        backdropFilter: 'blur(5px)'
-      }}>
-        {backgroundImages.map((_, idx) => (
-          <div
-            key={idx}
-            onClick={() => {
-              setCurrentBgIndex(idx);
-              setNextBgIndex((idx + 1) % backgroundImages.length);
-            }}
-            style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              backgroundColor: idx === currentBgIndex ? '#3498db' : 'rgba(255,255,255,0.5)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              transform: idx === currentBgIndex ? 'scale(1.2)' : 'scale(1)'
-            }}
-          />
-        ))}
-      </div>
-
       {/* Login Box */}
       <div style={{
         position: 'relative',
@@ -259,7 +192,6 @@ const Login = ({ onLogin }) => {
         width: '100%',
         maxWidth: '420px',
         margin: '20px',
-        backdropFilter: 'blur(0px)',
         animation: 'slideUp 0.5s ease-out'
       }}>
         <div style={{ textAlign: 'center' }}>
@@ -559,13 +491,13 @@ const Login = ({ onLogin }) => {
         {`
           @keyframes zoom {
             0% {
-              transform: scale(1.05);
+              transform: scale(1);
             }
             50% {
               transform: scale(1.1);
             }
             100% {
-              transform: scale(1.05);
+              transform: scale(1);
             }
           }
           
